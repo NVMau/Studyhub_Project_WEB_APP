@@ -27,7 +27,7 @@ export default function LecturePage() {
     file: null,
     videos: [],
   });
-  const [previewVideo, setPreviewVideo] = useState(null); // Hiển thị video preview
+  const [previewVideo, setPreviewVideo] = useState([]); // Hiển thị video preview
   const userRoles = keycloak.tokenParsed?.realm_access?.roles || []; // Get user roles
 
   useEffect(() => {
@@ -38,16 +38,15 @@ export default function LecturePage() {
     fetchLectures();
   }, [courseId]);
 
-  // Hiển thị video xem trước khi người dùng chọn file video
   const handleVideoChange = (e) => {
-    const selectedVideo = e.target.files[0];
-    setNewLecture({ ...newLecture, videos: [selectedVideo] });
+    const selectedVideos = Array.from(e.target.files); // Chuyển filelist thành array
+    setNewLecture({ ...newLecture, videos: selectedVideos });
 
-    // Hiển thị video xem trước
-    if (selectedVideo) {
-      const objectUrl = URL.createObjectURL(selectedVideo);
-      setPreviewVideo(objectUrl);
-    }
+    // Hiển thị preview của tất cả các video đã chọn
+    const previewUrls = selectedVideos.map((video) =>
+      URL.createObjectURL(video)
+    );
+    setPreviewVideo(previewUrls);
   };
 
   const handleCreateLecture = async () => {
@@ -56,11 +55,17 @@ export default function LecturePage() {
     formData.append("title", newLecture.title);
     formData.append("content", newLecture.content);
     formData.append("file", newLecture.file);
+
+    // Kiểm tra và gửi dữ liệu video đúng cách
     newLecture.videos.forEach((video, index) => {
-      formData.append(`videos[${index}]`, video);
+      formData.append(`videos`, video); // Không cần index, vì Spring sẽ nhận diện "videos" là danh sách
     });
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
 
     try {
+      console.log("FormData: ", formData);
       await createLecture(formData);
       alert("Bài giảng đã được thêm thành công!");
       const response = await getLecturesByCourseId(courseId);
@@ -77,9 +82,11 @@ export default function LecturePage() {
         <Typography
           variant="h4"
           gutterBottom
-          sx={{ textAlign: "center" }} // Canh giữa chữ
+          sx={{ textAlign: "center",
+            fontWeight: 'bold'
+           }} // Canh giữa chữ
         >
-          Danh sách bài giảng
+          DANH SÁCH BÀI GIẢNG
         </Typography>
 
         <Grid container spacing={3}>
@@ -94,6 +101,8 @@ export default function LecturePage() {
                   flexDirection: "column",
                   gap: "20px",
                   margin: "0 auto",
+                  boxShadow: 3,
+                  borderRadius: 2,
                 }}
               >
                 <CardContent
@@ -105,7 +114,6 @@ export default function LecturePage() {
                   <Typography variant="body2" color="textSecondary">
                     {lecture.content}
                   </Typography>
-
                   {/* Hiển thị file PDF nếu có */}
                   {lecture.fileUrl && (
                     <Box sx={{ marginTop: 2 }}>
@@ -115,24 +123,33 @@ export default function LecturePage() {
                         target="_blank"
                         rel="noopener"
                       >
-                        Tải tài liệu PDF/Word
+                        {`${lecture.fileUrl.split("/").pop()}`}{" "}
+                        {/* Lấy tên file từ URL */}
                       </Link>
                     </Box>
                   )}
-
                   {/* Hiển thị nhiều video nếu có */}
                   {lecture.videoUrls && lecture.videoUrls.length > 0 && (
                     <Box sx={{ marginTop: 2 }}>
-                      <Typography variant="h6">Video bài giảng:</Typography>
+                      <Typography variant="h6">Video về bài giảng:</Typography>
                       {lecture.videoUrls.map((videoUrl, index) => (
-                        <CardMedia
+                        <Box
                           key={index}
-                          component="video"
-                          height="300" // Điều chỉnh chiều cao video
-                          controls
-                          src={videoUrl}
-                          sx={{ marginTop: 2 }}
-                        />
+                          sx={{ marginBottom: 4, marginLeft: 4 }}
+                        >
+                          {" "}
+                          {/* Thêm khoảng cách giữa các video */}
+                          <Typography variant="body1" sx={{ marginBottom: 2 }}>
+                            {`Video ${index + 1}:`}
+                          </Typography>
+                          <CardMedia
+                            component="video"
+                            height="300" // Điều chỉnh chiều cao video
+                            controls
+                            src={videoUrl}
+                            sx={{ marginTop: 2 }}
+                          />
+                        </Box>
                       ))}
                     </Box>
                   )}
@@ -146,13 +163,13 @@ export default function LecturePage() {
         {userRoles.includes("ROLE_ADMIN") ||
         userRoles.includes("ROLE_TEACHER") ? (
           <Box sx={{ mt: 5 }}>
-            <Typography variant="h5" gutterBottom>
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
               Thêm bài giảng mới
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Tiêu đề"
+                  label="Nhập tên bài giảng"
                   value={newLecture.title}
                   onChange={(e) =>
                     setNewLecture({ ...newLecture, title: e.target.value })
@@ -163,7 +180,7 @@ export default function LecturePage() {
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  label="Nội dung"
+                  label="Nhập nội dung chính"
                   value={newLecture.content}
                   onChange={(e) =>
                     setNewLecture({ ...newLecture, content: e.target.value })
@@ -187,33 +204,53 @@ export default function LecturePage() {
                   />
                 </Button>
               </Grid>
+
+              {/* Hiển thị preview PDF */}
+              {newLecture.file &&
+                newLecture.file.type === "application/pdf" && (
+                  <Grid item xs={12}>
+                    <Typography variant="h6">
+                      Xem trước tài liệu PDF:
+                    </Typography>
+                    <iframe
+                      src={URL.createObjectURL(newLecture.file)}
+                      width="100%"
+                      height="500px"
+                    ></iframe>
+                  </Grid>
+                )}
               <Grid item xs={12}>
                 <Button variant="contained" component="label" fullWidth>
                   Chọn Video bài giảng (mp4)
                   <input
                     type="file"
                     accept="video/mp4"
+                    multiple // Cho phép chọn nhiều video
                     hidden
-                    onChange={handleVideoChange}
+                    onChange={handleVideoChange} // Hàm xử lý sẽ cần điều chỉnh để nhận nhiều file
                   />
                 </Button>
               </Grid>
-              {previewVideo && (
+              {/* Hiển thị preview cho tất cả các video đã chọn */}
+              {previewVideo && previewVideo.length > 0 && (
                 <Grid item xs={12}>
-                  <Typography variant="h6">Video preview:</Typography>
-                  <CardMedia
-                    component="video"
-                    height="300"
-                    controls
-                    src={previewVideo}
-                    sx={{ marginTop: 2 }}
-                  />
+                  <Typography variant="h6">Xem trước video:</Typography>
+                  {previewVideo.map((videoUrl, index) => (
+                    <CardMedia
+                      key={index}
+                      component="video"
+                      height="300"
+                      controls
+                      src={videoUrl}
+                      sx={{ marginTop: 2 }}
+                    />
+                  ))}
                 </Grid>
               )}
               <Grid item xs={12}>
                 <Button
                   variant="contained"
-                  color="primary"
+                  color="warning"
                   onClick={handleCreateLecture}
                   fullWidth
                 >
