@@ -7,6 +7,12 @@ import Courses from "../pages/Course";
 import CreateCourse from "../pages/CreateCourse";
 import Profile from "../pages/Profile";
 import LecturePage from "../pages/LecturePage";
+import CoursesTeacher from "../pages/CoursesTeacher";
+import CoursesStudent from "../pages/CoursesStudent";
+import LectureStudent from "../pages/LectureStudent";
+import LectureTeacher from "../pages/LectureTeacher";
+
+
 
 
 
@@ -20,7 +26,14 @@ const AppRoutes = () => {
         <Route path="/courses" element={<Courses />} />
         <Route path="/createCourses" element={<CreateCourse />} />
         <Route path="/profile" element={<Profile />} />
+
+
+
         <Route path="/lectures/:courseId" element={<LecturePage />} />{/* Add route for LecturePage */}
+        <Route path="/courses-teacher" element={<CoursesTeacher />} />
+        <Route path="/courses-student" element={<CoursesStudent />} />
+        <Route path="/lectures-student/:courseId" element={<LectureStudent />} />{/* Add route for LecturePage */}
+        <Route path="/lectures-teacher/:courseId" element={<LectureTeacher />} />
 
 
 

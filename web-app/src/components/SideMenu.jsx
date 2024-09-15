@@ -35,18 +35,19 @@ function SideMenu() {
             />
           </ListItemButton>
         </ListItem>
-
-        <ListItem key={"courses"} disablePadding>
-            <ListItemButton onClick={() => navigate("/courses")}>
+        {userRoles.includes("ROLE_STUDENT") ? (
+        <ListItem key={"courses-student"} disablePadding>
+            <ListItemButton onClick={() => navigate("/courses-student")}>
               <ListItemIcon>
                 <LocalLibraryIcon />
               </ListItemIcon>
               <ListItemText
-                primary={"Khóa học"}
+                primary={"Khóa học đã đăng kí"}
                 primaryTypographyProps={{ style: { fontWeight: "bold" } }}
               />
             </ListItemButton>
           </ListItem>
+          ) : null}
 
 
 
@@ -59,6 +60,21 @@ function SideMenu() {
               </ListItemIcon>
               <ListItemText
                 primary={"Tạo khóa học"}
+                primaryTypographyProps={{ style: { fontWeight: "bold" } }}
+              />
+            </ListItemButton>
+          </ListItem>
+        ) : null}
+
+        {/* Hiển thị mục khóa học chỉ khi người dùng có ROLE_ADMIN hoặc ROLE_TEACHER */}
+        {userRoles.includes("ROLE_ADMIN") || userRoles.includes("ROLE_TEACHER") ? (
+          <ListItem key={"courses-teacher"} disablePadding>
+            <ListItemButton onClick={() => navigate("/courses-teacher")}>
+              <ListItemIcon>
+                <LocalLibraryIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={"Chỉnh sửa khóa học"}
                 primaryTypographyProps={{ style: { fontWeight: "bold" } }}
               />
             </ListItemButton>

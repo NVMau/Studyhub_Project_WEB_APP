@@ -10,17 +10,17 @@ import {
   CardMedia,
   Link,
 } from "@mui/material";
-import keycloak from "../keycloak";
+import keycloak from "../keycloak"; // Keycloak to get user roles
 import {
   getLecturesByCourseId,
   createLecture,
-} from "../services/lectureService";
-import { useParams } from "react-router-dom";
+} from "../services/lectureService"; // API service
+import { useParams } from "react-router-dom"; // Import useParams để lấy courseId
 import Scene from "./Scene";
 import { createAssignment } from "../services/assignmentService";
 
-export default function LecturePage() {
-  const { courseId } = useParams();
+export default function LectureTeacher() {
+  const { courseId } = useParams(); // Lấy courseId từ URL
   const [lectures, setLectures] = useState([]);
   const [newLecture, setNewLecture] = useState({
     title: "",
@@ -28,17 +28,23 @@ export default function LecturePage() {
     file: null,
     videos: [],
   });
-  const [previewVideo, setPreviewVideo] = useState([]);
-  const userRoles = keycloak.tokenParsed?.realm_access?.roles || [];
-  const [lectureQuestions, setLectureQuestions] = useState({});
-  const [assignmentCreated, setAssignmentCreated] = useState({});
+  const [previewVideo, setPreviewVideo] = useState([]); // Hiển thị video preview
+  const userRoles = keycloak.tokenParsed?.realm_access?.roles || []; // Get user roles
 
+  // Trạng thái để theo dõi câu hỏi của từng bài giảng
+  const [lectureQuestions, setLectureQuestions] = useState({});
+  const [newAssignment, setNewAssignment] = useState({
+    name: "",
+    description: "",
+  });
+
+  // Lấy danh sách bài giảng và khởi tạo câu hỏi cho mỗi bài giảng
   useEffect(() => {
     const fetchLectures = async () => {
       const response = await getLecturesByCourseId(courseId);
       setLectures(response.data);
       const initialQuestions = response.data.reduce((acc, lecture) => {
-        acc[lecture.id] = [];
+        acc[lecture.id] = []; // Mỗi bài giảng có mảng câu hỏi riêng
         return acc;
       }, {});
       setLectureQuestions(initialQuestions);
@@ -46,48 +52,66 @@ export default function LecturePage() {
     fetchLectures();
   }, [courseId]);
 
+  // Xử lý chọn video
   const handleVideoChange = (e) => {
-    const selectedVideos = Array.from(e.target.files);
+    const selectedVideos = Array.from(e.target.files); // Chuyển filelist thành array
     setNewLecture({ ...newLecture, videos: selectedVideos });
-    const previewUrls = selectedVideos.map(video => URL.createObjectURL(video));
+
+    const previewUrls = selectedVideos.map((video) =>
+      URL.createObjectURL(video)
+    );
     setPreviewVideo(previewUrls);
   };
 
+  // Xử lý thêm bài giảng
   const handleCreateLecture = async () => {
     const formData = new FormData();
     formData.append("courseId", courseId);
     formData.append("title", newLecture.title);
     formData.append("content", newLecture.content);
     formData.append("file", newLecture.file);
-    newLecture.videos.forEach(video => formData.append("videos", video));
+
+    newLecture.videos.forEach((video) => {
+      formData.append("videos", video); // Thêm video vào form data
+    });
+
     try {
       await createLecture(formData);
       alert("Bài giảng đã được thêm thành công!");
       const response = await getLecturesByCourseId(courseId);
-      setLectures(response.data);
+      setLectures(response.data); // Làm mới danh sách bài giảng
     } catch (error) {
       console.error("Error creating lecture:", error);
       alert("Lỗi khi thêm bài giảng.");
     }
   };
 
+  // Xử lý thêm bài tập
   const handleCreateAssignment = async (lectureId) => {
     try {
+      const processedQuestions = lectureQuestions[lectureId].map((question) => ({
+        ...question,
+        correctAnswer: question.options[0], // Mặc định câu trả lời đầu tiên là đúng
+      }));
+
       const payload = {
-        lectureId,
-        questions: lectureQuestions[lectureId],
+        lectureId: lectureId,
+        title: newAssignment.name,
+        questions: processedQuestions,
       };
+      console.log("Sending assignment data:", payload); // Xuất dữ liệu gửi đi ra console
+
       await createAssignment(payload);
       alert("Bài tập đã được thêm thành công!");
-      setAssignmentCreated(prev => ({ ...prev, [lectureId]: true }));
     } catch (error) {
       console.error("Lỗi khi thêm bài tập:", error);
       alert("Lỗi khi thêm bài tập.");
     }
   };
 
+  // Thay đổi câu hỏi
   const handleQuestionTextChange = (lectureId, index, value) => {
-    setLectureQuestions(prev => ({
+    setLectureQuestions((prev) => ({
       ...prev,
       [lectureId]: prev[lectureId].map((question, i) =>
         i === index ? { ...question, questionText: value } : question
@@ -95,36 +119,32 @@ export default function LecturePage() {
     }));
   };
 
+  // Thay đổi lựa chọn
   const handleOptionChange = (lectureId, questionIndex, optionIndex, value) => {
-    setLectureQuestions(prev => ({
-      ...prev,
-      [lectureId]: prev[lectureId].map((question, i) =>
-        i === questionIndex
-          ? { ...question, options: question.options.map((option, j) =>
-              j === optionIndex ? value : option
-            ) }
-          : question
-      ),
-    }));
+    setLectureQuestions((prevQuestions) => {
+      const newQuestions = [...prevQuestions[lectureId]];
+      newQuestions[questionIndex].options[optionIndex] = value;
+
+      // Tự động gán câu trả lời đầu tiên là đúng
+      if (optionIndex === 0) {
+        newQuestions[questionIndex].correctAnswer = value;
+      }
+
+      return { ...prevQuestions, [lectureId]: newQuestions };
+    });
   };
 
-  const handleCorrectAnswerChange = (lectureId, questionIndex, value) => {
-    setLectureQuestions(prev => ({
-      ...prev,
-      [lectureId]: prev[lectureId].map((question, i) =>
-        i === questionIndex ? { ...question, correctAnswer: value } : question
-      ),
-    }));
-  };
-
+  // Thêm câu hỏi mới
   const addNewQuestion = (lectureId) => {
-    setLectureQuestions(prev => ({
-      ...prev,
-      [lectureId]: [
-        ...prev[lectureId],
-        { questionText: "", options: ["", "", "", ""], correctAnswer: "" },
-      ],
-    }));
+    setLectureQuestions((prevQuestions) => {
+      const newQuestions = [...prevQuestions[lectureId]];
+      newQuestions.push({
+        questionText: "",
+        options: ["", "", "", ""], // Tạo ít nhất 2 lựa chọn trống
+        correctAnswer: "",
+      });
+      return { ...prevQuestions, [lectureId]: newQuestions };
+    });
   };
 
   return (
@@ -196,58 +216,70 @@ export default function LecturePage() {
 
                   {userRoles.includes("ROLE_ADMIN") ||
                   userRoles.includes("ROLE_TEACHER") ? (
-                    assignmentCreated[lecture.id] ? (
-                      <Box sx={{ mt: 3 }}>
-                        <Typography variant="h5" gutterBottom>
-                          Câu hỏi trong bài tập
-                        </Typography>
-                        {lectureQuestions[lecture.id].map((question, index) => (
-                          <Box key={index} sx={{ mb: 3 }}>
+                    <Box sx={{ mt: 3 }}>
+                      <Typography variant="h5" gutterBottom>
+                        Thêm câu hỏi mới
+                      </Typography>
+
+                      {lectureQuestions[lecture.id]?.map((question, index) => (
+                        <Box key={index} sx={{ mb: 3 }}>
+                          <TextField
+                            label="Câu hỏi"
+                            value={question.questionText}
+                            onChange={(e) =>
+                              handleQuestionTextChange(
+                                lecture.id,
+                                index,
+                                e.target.value
+                              )
+                            }
+                            fullWidth
+                            sx={{ mb: 2 }}
+                          />
+                          {question.options.map((option, optionIndex) => (
                             <TextField
-                              label="Câu hỏi"
-                              value={question.questionText}
+                              key={optionIndex}
+                              label={`Lựa chọn ${optionIndex + 1}`}
+                              value={option}
+                              onChange={(e) =>
+                                handleOptionChange(
+                                  lecture.id,
+                                  index,
+                                  optionIndex,
+                                  e.target.value
+                                )
+                              }
                               fullWidth
                               sx={{ mb: 2 }}
                             />
-                            {question.options.map((option, optionIndex) => (
-                              <TextField
-                                key={optionIndex}
-                                label={`Lựa chọn ${optionIndex + 1}`}
-                                value={option}
-                                fullWidth
-                                sx={{ mb: 2 }}
-                              />
-                            ))}
-                          </Box>
-                        ))}
-                      </Box>
-                    ) : (
-                      <>
-                        <Button
-                          variant="outlined"
-                          onClick={() => addNewQuestion(lecture.id)}
-                          sx={{ mb: 2 }}
-                        >
-                          Thêm câu hỏi
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          sx={{ mt: 2 }}
-                          fullWidth
-                          onClick={() => handleCreateAssignment(lecture.id)}
-                        >
-                          Thêm bài tập
-                        </Button>
-                      </>
-                    )
+                          ))}
+                        </Box>
+                      ))}
+
+                      <Button
+                        variant="outlined"
+                        onClick={() => addNewQuestion(lecture.id)}
+                        sx={{ mb: 2 }}
+                      >
+                        Thêm câu hỏi
+                      </Button>
+
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        sx={{ mt: 2 }}
+                        fullWidth
+                        onClick={() => handleCreateAssignment(lecture.id)}
+                      >
+                        Thêm bài tập
+                      </Button>
+                    </Box>
                   ) : null}
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
-
         {/* Render form for creating a new lecture */}
         {userRoles.includes("ROLE_ADMIN") ||
         userRoles.includes("ROLE_TEACHER") ? (
