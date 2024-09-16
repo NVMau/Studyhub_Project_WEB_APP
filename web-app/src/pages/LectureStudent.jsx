@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   Box,
-  TextField,
   Button,
   Card,
   CardContent,
@@ -9,31 +8,139 @@ import {
   Grid,
   CardMedia,
   Link,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from "@mui/material";
 import keycloak from "../keycloak"; // Keycloak to get user roles
-import {
-  getLecturesByCourseId,
-  createLecture,
-} from "../services/lectureService"; // API service
+import { getLecturesByCourseId } from "../services/lectureService"; // API service
 import { useParams } from "react-router-dom"; // Import useParams để lấy courseId
 import Scene from "./Scene";
-import { createAssignment } from "../services/assignmentService";
+import { getMyProfile } from "../services/userService";
+
+import {
+  getAssignmentsByLectureId,
+  submitExamResult,
+  getExamResultByLectureId, // API để lấy kết quả bài thi
+} from "../services/examResultService"; // Service để lấy bài tập và gửi kết quả
 
 export default function LecturePage() {
   const { courseId } = useParams(); // Lấy courseId từ URL
   const [lectures, setLectures] = useState([]);
-  const userRoles = keycloak.tokenParsed?.realm_access?.roles || []; // Get user roles
+  const [assignment, setAssignment] = useState(null); // Lưu bài tập hiện tại
+  const [examResult, setExamResult] = useState(null); // Lưu kết quả bài thi nếu đã làm
+  const [userAnswers, setUserAnswers] = useState({}); // Trạng thái để lưu câu trả lời của người dùng
+  const [loadingAssignment, setLoadingAssignment] = useState(false); // Để kiểm tra trạng thái load bài tập
+  const [selectedLectureId, setSelectedLectureId] = useState(null); // Theo dõi bài giảng được chọn để làm bài
+  const [profile, setProfile] = useState({});
 
-  // Trạng thái để theo dõi câu hỏi của từng bài giảng
+
+  const getProfile = async () => {
+    try {
+      const response = await getMyProfile();
+      const data = response.data;
+
+      console.log("Response data:", data); // In ra dữ liệu response
+
+      setProfile(data);
+    } catch (error) {
+      const errorResponse = error.response?.data;
+      console.log("errorResponse data:", errorResponse);
+    }
+  };
 
   useEffect(() => {
     const fetchLectures = async () => {
-      const response = await getLecturesByCourseId(courseId);
-      setLectures(response.data);
-      // Khởi tạo trạng thái câu hỏi cho mỗi bài giảng
+      try {
+        const response = await getLecturesByCourseId(courseId);
+        getProfile();
+        setLectures(response.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách bài giảng:", error);
+      }
     };
     fetchLectures();
   }, [courseId]);
+
+  // Xử lý khi học sinh chọn câu trả lời
+  const handleAnswerChange = (questionIndex, answer) => {
+    setUserAnswers((prevAnswers) => ({
+      ...prevAnswers,
+      [questionIndex]: answer,
+    }));
+  };
+
+  // Gửi kết quả bài tập
+  const handleSubmitExam = async () => {
+    try {
+      const resultPayload = {
+        userAnswers: Object.values(userAnswers),
+      };
+      // Gửi câu trả lời đến backend
+      await submitExamResult(
+        assignment.id,
+        profile.profileId,
+        resultPayload
+      );
+      alert("Bài thi đã được gửi thành công!");
+    } catch (error) {
+      console.error("Lỗi khi gửi bài thi:", error);
+      alert("Lỗi khi gửi bài thi.");
+    }
+  };
+
+  // Lấy bài tập cho từng bài giảng khi học sinh muốn làm bài
+  const handleFetchAssignment = async (lectureId) => {
+    setLoadingAssignment(true); // Bắt đầu load
+    setSelectedLectureId(lectureId); // Đặt bài giảng được chọn
+
+    if (!profile?.profileId) {
+      console.error("Profile ID is not ready yet.");
+      setLoadingAssignment(false);
+      return;
+    }
+
+    console.log(`Fetching assignment for lecture ID: ${lectureId}, Profile ID: ${profile?.profileId}`);
+    
+    try {
+      // Đầu tiên, lấy assignment trước dựa trên lectureId
+      const assignmentResponse = await getAssignmentsByLectureId(lectureId);
+      if (assignmentResponse.data && assignmentResponse.data.length > 0) {
+        const assignment = assignmentResponse.data[0]; // Giả sử bạn chỉ có một assignment
+        setAssignment(assignment);
+
+        console.log("Fetching exam result for assignment ID:", assignment.id);
+        
+        // Sau đó, gọi API kết quả bài thi bằng assignmentId
+        const examResultResponse = await getExamResultByLectureId(
+          assignment.id, // Đây là assignmentId, không phải lectureId
+          profile.profileId
+        );
+
+        if (examResultResponse?.data) {
+          console.log("Exam result data available for assignment:", assignment.id);
+          setExamResult(examResultResponse.data); // Đặt kết quả bài thi
+          setAssignment(null); // Nếu đã làm bài thi, không cần hiển thị assignment
+        } else {
+          console.log("No exam result found, assignment is available");
+          setExamResult(null); // Nếu chưa có kết quả thì để người dùng làm bài
+        }
+      } else {
+        setAssignment(null);
+        console.log("No assignment found for this lecture.");
+        alert("Không có bài tập nào cho bài giảng này.");
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu bài tập hoặc kết quả:", error);
+      setAssignment(null);
+    } finally {
+      setLoadingAssignment(false); // Kết thúc load
+    }
+  };
+
+  
+
+
   return (
     <Scene>
       <Box sx={{ padding: 3 }}>
@@ -102,13 +209,112 @@ export default function LecturePage() {
                       ))}
                     </Box>
                   )}
+
+                  {/* Nếu bài tập đã làm, hiển thị kết quả */}
+                  {examResult && selectedLectureId === lecture.id ? (
+                    <Box sx={{ mt: 5 }}>
+                      <Typography variant="h5" gutterBottom>
+                        Điểm của bạn: {examResult.score}
+                      </Typography>
+                      {examResult.questionResults.map((result, index) => (
+                        <Box key={index} sx={{ mb: 3 }}>
+                          <Typography variant="body1">
+                            Câu {index + 1}: {result.questionText}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color={result.isCorrect ? "green" : "red"}
+                          >
+                            Câu trả lời của bạn: {result.userAnswer}{" "}
+                            {result.isCorrect ? "(Đúng)" : "(Sai)"}
+                          </Typography>
+                          <Typography variant="body2">
+                            Đáp án đúng: {result.correctAnswer}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : (
+                    <>
+                      {/* Hiển thị nút làm bài tập nếu chưa làm */}
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleFetchAssignment(lecture.id)}
+                        sx={{ mt: 2 }}
+                      >
+                        Xem bài tập
+                      </Button>
+
+                      {/* Hiển thị loading khi đang lấy bài tập */}
+                      {loadingAssignment && selectedLectureId === lecture.id && (
+                        <Typography
+                          variant="body1"
+                          sx={{ textAlign: "center", mt: 3 }}
+                        >
+                          Đang tải bài tập...
+                        </Typography>
+                      )}
+
+                      {/* Hiển thị bài tập nếu chưa làm */}
+                      {assignment &&
+                      selectedLectureId === lecture.id &&
+                      assignment.questions &&
+                      assignment.questions.length > 0 ? (
+                        <Box sx={{ mt: 5 }}>
+                          <Typography variant="h5" gutterBottom>
+                            {assignment.title || "Bài tập không có tiêu đề"}
+                          </Typography>
+                          {assignment.questions.map((question, index) => (
+                            <Box key={index} sx={{ mb: 3 }}>
+                              <Typography variant="body1">
+                                Câu {index + 1}: {question.questionText}
+                              </Typography>
+                              <RadioGroup
+                                name={`question-${index}`}
+                                value={userAnswers[index] || ""}
+                                onChange={(e) =>
+                                  handleAnswerChange(index, e.target.value)
+                                }
+                              >
+                                {question.options.map((option, optionIndex) => (
+                                  <FormControlLabel
+                                    key={optionIndex}
+                                    value={option}
+                                    control={<Radio />}
+                                    label={option}
+                                  />
+                                ))}
+                              </RadioGroup>
+                            </Box>
+                          ))}
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleSubmitExam}
+                            sx={{ mt: 2 }}
+                          >
+                            Nộp bài
+                          </Button>
+                        </Box>
+                      ) : (
+                        !loadingAssignment &&
+                        selectedLectureId === lecture.id && (
+                          <Typography
+                            variant="body1"
+                            sx={{ mt: 3, textAlign: "center" }}
+                          >
+                            Không có bài tập nào được tìm thấy.
+                          </Typography>
+                        )
+                      )}
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
-
-       
       </Box>
     </Scene>
   );

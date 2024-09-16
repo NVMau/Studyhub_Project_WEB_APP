@@ -25,6 +25,14 @@ export const API = {
 
   //APi Cho bài tập 
   CREATE_ASSIGNMENT: "/api/assignments",
+
+  GET_ASSIGNMENTS_BY_LECTURE: "/api/assignments/lecture",
+
+
+  SUBMIT_EXAM_RESULT: "/api/exam-results",
+  GET_EXAMRESULT_BY_LECTURE: "/api/exam-results/assignment",
+
+  
 };
 
 export const KEYCLOACK_CONFIG = {

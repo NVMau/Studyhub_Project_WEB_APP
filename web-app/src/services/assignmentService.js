@@ -12,4 +12,11 @@ export const createAssignment = async (assignmentData) => {
   });
 };
 
-// Có thể thêm các function khác để lấy danh sách bài tập, xóa bài tập, cập nhật bài tập,...
+// API để lấy danh sách bài tập theo bài giảng
+export const getAssignmentsByLectureId = async (lectureId) => {
+  return await httpClient.get(`${API.GET_ASSIGNMENTS_BY_LECTURE}/${lectureId}`, {
+    headers: {
+      Authorization: "Bearer " + keycloak.token,
+    },
+  });
+};

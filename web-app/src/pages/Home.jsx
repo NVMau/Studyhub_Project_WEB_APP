@@ -14,9 +14,8 @@ import {
 import Scene from "./Scene";
 import { useEffect, useState } from "react";
 import { getAllCourses, searchCourses } from "../services/courseService";
-import { registerCourse,  } from "../services/registerService";
+import { registerCourse } from "../services/registerService";
 import { getMyProfile } from "../services/userService";
-
 
 import LineItem from "../components/LineItem";
 
@@ -30,7 +29,6 @@ export default function Home() {
   const [snackBarOpen, setSnackBarOpen] = useState(false);
   const [snackBarMessage, setSnackBarMessage] = useState("");
   const [profile, setProfile] = useState({});
-
 
   const getProfile = async () => {
     try {
@@ -47,8 +45,6 @@ export default function Home() {
       setSnackBarOpen(true);
     }
   };
-
-
 
   const handleCloseSnackBar = (event, reason) => {
     if (reason === "clickaway") {
@@ -81,14 +77,17 @@ export default function Home() {
       const errorResponse = error.response?.data;
       setSnackSeverity("error");
       console.log("errorResponse data:", errorResponse.data);
-  
+
       // Kiểm tra xem lỗi có phải là do đã đăng ký khóa học trước đó
-      if (errorResponse?.message === "Student has already enrolled in this course.") {
+      if (
+        errorResponse?.message ===
+        "Student has already enrolled in this course."
+      ) {
         setSnackBarMessage("Bạn đã đăng kí khóa học này rồi!");
       } else {
         setSnackBarMessage(errorResponse?.message ?? error.message);
       }
-  
+
       setSnackBarOpen(true);
     }
   };
@@ -103,7 +102,6 @@ export default function Home() {
       setCourses(response.data);
 
       console.log("Response data:", response.data); // In ra dữ liệu response
-
     } catch (error) {
       const errorResponse = error.response?.data;
       setSnackSeverity("error");
@@ -154,9 +152,7 @@ export default function Home() {
               width: "100%", // Chiều rộng full
             }}
           >
-            <Grid container spacing={2}
-            
-            >
+            <Grid container spacing={2}>
               <Grid item xs={4}>
                 <TextField
                   label="Từ khóa tìm kiếm"
@@ -196,25 +192,17 @@ export default function Home() {
                 />
               </Grid>
               <Grid item xs={1}>
-
-
-                <Button variant="contained" 
-                onClick={handleSearch} 
-                
-                fullWidth // Nút tìm kiếm sẽ rộng bằng ô nhập
+                <Button
+                  variant="contained"
+                  onClick={handleSearch}
+                  fullWidth // Nút tìm kiếm sẽ rộng bằng ô nhập
                   sx={{ height: "56px" }} // Để căn giữa nút với ô nhập liệu
-                
                 >
                   Tìm kiếm
                 </Button>
               </Grid>
             </Grid>
           </Box>
-
-
-
-
-
 
           <Box sx={{ width: "100%", gap: "10px" }}>
             {courses.map((course) => (
@@ -235,52 +223,48 @@ export default function Home() {
               //   <LineItem header={"Giáo viên"} data={course.teacherId}></LineItem>
               // </Card>
 
-
-
-              <Card key={course.id} sx={{
-                    marginTop: 2,
-                    minWidth: 350,
-                    boxShadow: 3,
-                    borderRadius: 2,
-                    padding: 2,
-                    mb: 2,
-                  }}>
-              <CardMedia
-                sx={{ height: 200, objectFit: "cover" }}
-                component="img"
-                alt={course.name}
-                image={course.imageUrl}></CardMedia>
-              <CardContent>
-                <Typography gutterBottom variant="h4" component="div">
-                  {course.name}
-                </Typography>
-                <Typography gutterBottom variant="h7" component="div">
-                  Giá: {course.price}đ
-                </Typography>
-                <Typography variant="h7" color="text.secondary">
-                  {course.description}
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <Button variant="contained" color="success" onClick={() => handleRegisterCourse(course.id)}>
-                  Đăng kí khóa học
-                </Button>
-                <Button size="small">Learn More</Button>
-              </CardActions>
-            </Card>
-              
-
-
-
-
+              <Card
+                key={course.id}
+                sx={{
+                  marginTop: 2,
+                  minWidth: 350,
+                  boxShadow: 3,
+                  borderRadius: 2,
+                  padding: 2,
+                  mb: 2,
+                }}
+              >
+                <CardMedia
+                  sx={{ height: 200, objectFit: "cover" }}
+                  component="img"
+                  alt={course.name}
+                  image={course.imageUrl}
+                ></CardMedia>
+                <CardContent>
+                  <Typography gutterBottom variant="h4" component="div">
+                    {course.name}
+                  </Typography>
+                  <Typography gutterBottom variant="h7" component="div">
+                    Giá: {course.price}đ
+                  </Typography>
+                  <Typography variant="h7" color="text.secondary">
+                    {course.description}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    onClick={() => handleRegisterCourse(course.id)}
+                  >
+                    Đăng kí khóa học
+                  </Button>
+                  <Button size="small">Learn More</Button>
+                </CardActions>
+              </Card>
             ))}
           </Box>
         </Box>
-
-
-
-
-        
       </Scene>
     </>
   );
