@@ -1,0 +1,17 @@
+input:-webkit-autofill {
+    background-color: #333 !important; /* Màu nền mong muốn */
+    -webkit-box-shadow: 0 0 0 1000px #333 inset !important; /* Đảm bảo toàn bộ nền ô được áp dụng */
+    -webkit-text-fill-color: white !important; /* Màu chữ trong ô nhập liệu */
+}
+
+input:-webkit-autofill:focus {
+    background-color: #333 !important;
+    -webkit-box-shadow: 0 0 0 1000px #333 inset !important;
+    -webkit-text-fill-color: white !important;
+}
+
+input:-webkit-autofill:hover {
+    background-color: #333 !important;
+    -webkit-box-shadow: 0 0 0 1000px #333 inset !important;
+    -webkit-text-fill-color: white !important;
+}

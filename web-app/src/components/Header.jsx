@@ -13,6 +13,9 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import MoreIcon from "@mui/icons-material/MoreVert";
 import { logOut } from "../services/authenticationService";
 import keycloak from "../keycloak";
+import { useNavigate } from "react-router-dom";
+
+
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -63,6 +66,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function Header() {
+  const navigate = useNavigate()
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
 
@@ -86,12 +90,13 @@ export default function Header() {
     setMobileMoreAnchorEl(event.currentTarget);
   };
 
-  const handleLogout = (event) => {
-    clearCookies();
-    handleMenuClose();
-    logOut();
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+  
+    // Điều hướng về trang đăng nhập
+    navigate("/login");
   };
-
   const menuId = "primary-search-account-menu";
   const renderMenu = (
     <Menu

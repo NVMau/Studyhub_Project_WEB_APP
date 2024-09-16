@@ -21,7 +21,7 @@ import {
   createAssignment,
   getAssignmentsByLectureId,
 } from "../services/assignmentService";
-
+import useUserRoles from "../services/useUserRoles"; 
 export default function LectureTeacher() {
   const { courseId } = useParams(); // Lấy courseId từ URL
   const [lectures, setLectures] = useState([]);
@@ -32,7 +32,8 @@ export default function LectureTeacher() {
     videos: [],
   });
   const [previewVideo, setPreviewVideo] = useState([]); // Hiển thị video preview
-  const userRoles = keycloak.tokenParsed?.realm_access?.roles || []; // Get user roles
+  const userRoles = useUserRoles(); 
+  // Get user roles
 
   // Trạng thái để theo dõi câu hỏi của từng bài giảng
   const [lectureQuestions, setLectureQuestions] = useState({});

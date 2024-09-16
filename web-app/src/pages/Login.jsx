@@ -17,25 +17,31 @@ export default function Login() {
 
     const params = new URLSearchParams();
     params.append("grant_type", "password");
-    params.append("client_id", "your-client-id");  // Điền client ID từ Keycloak
+    params.append("client_id", "skillhub_app");  // Điền client ID từ Keycloak
     params.append("username", username);
     params.append("password", password);
+    params.append("client_secret", "vwPi2qrYKPd7nOe9ErW8JqBWCikz5DfZ");
+    params.append("scope", "openid");
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/auth/realms/your-realm/protocol/openid-connect/token",  // Điền URL của Keycloak
+        "http://localhost:8180/realms/vmaudev/protocol/openid-connect/token",  // Điền URL của Keycloak
         params
       );
       const { access_token, refresh_token } = response.data;
-
+    
       // Lưu token vào localStorage
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
-
+      console.log("Access Token:", access_token);
+      console.log("Refresh Token:", refresh_token);
+    
+      console.log("Navigating to home page");
       // Chuyển hướng đến trang chính sau khi đăng nhập thành công
       navigate("/");
     } catch (err) {
       setError("Invalid username or password.");
+      console.error(err);
     } finally {
       setLoading(false);
     }

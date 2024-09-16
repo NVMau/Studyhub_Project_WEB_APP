@@ -12,7 +12,9 @@ import {
   getTeachingCourses,
 } from "../services/userService";
 import { useNavigate } from "react-router-dom";
-import keycloak from "../keycloak"; // Import keycloak to get user roles
+import keycloak from "../keycloak";
+import useUserRoles from "../services/useUserRoles"; // Import custom hook
+ // Import keycloak to get user roles
 
 export default function CoursesTeacher() {
   const [courses, setCourses] = useState([]);
@@ -23,7 +25,8 @@ export default function CoursesTeacher() {
   const navigate = useNavigate(); // Đặt useNavigate ở đây
 
   // Check user role from Keycloak
-  const userRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+  const userRoles = useUserRoles(); 
+
 
   const handleCloseSnackBar = (event, reason) => {
     if (reason === "clickaway") {

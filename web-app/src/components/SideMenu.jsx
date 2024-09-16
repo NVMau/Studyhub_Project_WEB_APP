@@ -12,13 +12,13 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import ChatIcon from '@mui/icons-material/Chat';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import { useNavigate } from "react-router-dom";
-import keycloak from "../keycloak";
+import useUserRoles from "../services/useUserRoles"; // Import custom hook
+
 
 
 function SideMenu() {
   const navigate = useNavigate(); // Sử dụng useNavigate để lấy hàm điều hướng
-  const userRoles = keycloak.tokenParsed?.realm_access?.roles || [];
-
+  const userRoles = useUserRoles(); // Lấy userRoles từ custom hook
 
   return (
     <>

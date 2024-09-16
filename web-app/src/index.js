@@ -4,9 +4,14 @@ import "./index.css";
 import App from "./App";
 import keycloak from "./keycloak";
 import { Box, CircularProgress, Typography } from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { lightTheme, darkTheme } from './theme';
+
 
 const Main = () => {
   const [keycloakInitialized, setKeycloakInitialized] = useState(false);
+  const [darkMode, setDarkMode] = useState(false); // State để theo dõi chế độ sáng/tối
 
   useEffect(() => {
     keycloak
@@ -38,8 +43,12 @@ const Main = () => {
     );
   }
 
-  return <App />;
+  return (
+    <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+      <CssBaseline />
+      <App setDarkMode={setDarkMode} darkMode={darkMode} />
+    </ThemeProvider>
+  );
 };
-
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<Main />);

@@ -35,7 +35,7 @@ export const API = {
   
 };
 
-export const KEYCLOACK_CONFIG = {
+export const KEYCLOAK_CONFIG = {
   url: "http://localhost:8180",
   realm: "vmaudev",
   clientId: "skillhub_webapp",

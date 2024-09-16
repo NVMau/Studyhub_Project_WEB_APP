@@ -1,32 +1,27 @@
 import httpClient from "../configurations/httpClient";
 import { API } from "../configurations/configuration";
-import keycloak from "../keycloak";
 
+// Hàm đăng ký người dùng mới
+// Hàm đăng ký người dùng mới
 export const register = async (data) => {
-  return await httpClient.post(API.REGISTRATION, data);
+  return await httpClient.post(API.REGISTRATION, data, {
+    headers: {
+      "Content-Type": "application/json",  // Xác định kiểu dữ liệu là JSON
+    },
+  });
 };
 
+// Hàm lấy profile của người dùng hiện tại
 export const getMyProfile = async () => {
-  return await httpClient.get(API.MY_PROFILE, {
-    headers : {
-      Authorization: "Bearer " + keycloak.token
-    }
-  })
-}
-// API to get registered courses for students
-export const getRegisteredCourses = async () => {
-  return await httpClient.get(API.USERREGISTERCOURSE, {
-    headers: {
-      Authorization: "Bearer " + keycloak.token,
-    },
-  });
+  return await httpClient.get(API.MY_PROFILE);
 };
 
-// API to get courses that the teacher is teaching
+// Hàm lấy các khóa học mà sinh viên đã đăng ký
+export const getRegisteredCourses = async () => {
+  return await httpClient.get(API.USERREGISTERCOURSE);
+};
+
+// Hàm lấy các khóa học mà giáo viên đang dạy
 export const getTeachingCourses = async () => {
-  return await httpClient.get(API.GET_TEACHERS_COURSES, {
-    headers: {
-      Authorization: "Bearer " + keycloak.token,
-    },
-  });
+  return await httpClient.get(API.GET_TEACHERS_COURSES);
 };
