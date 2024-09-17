@@ -16,7 +16,6 @@ import { styled } from "@mui/material/styles";
 import ForgotPassword from "./ForgotPassword";
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from "./CustomIcons";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import "./SignIn.css";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";

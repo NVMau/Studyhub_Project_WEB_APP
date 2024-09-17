@@ -7,6 +7,7 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { lightTheme, darkTheme } from './theme';
+import { DarkModeProvider } from './DarkModeContext';
 
 
 const Main = () => {
@@ -44,10 +45,10 @@ const Main = () => {
   }
 
   return (
-    <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
-      <CssBaseline />
-      <App setDarkMode={setDarkMode} darkMode={darkMode} />
-    </ThemeProvider>
+    <DarkModeProvider>
+    <CssBaseline />
+    <App />
+  </DarkModeProvider>
   );
 };
 const root = ReactDOM.createRoot(document.getElementById("root"));

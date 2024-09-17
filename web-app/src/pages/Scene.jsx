@@ -8,6 +8,7 @@ import Toolbar from "@mui/material/Toolbar";
 import { useTheme } from "@mui/material";
 import Header from "../components/Header";
 import SideMenu from "../components/SideMenu";
+import Footer from "../components/Footer"; //
 
 const drawerWidth = 300;
 
@@ -113,6 +114,17 @@ function Scene({ children }) {
           <Toolbar />
           {children}
         </Box>
+      </Box>
+            {/* Footer Section */}
+            <Box
+        component="footer"
+        sx={{
+          mt: "auto", // Ensure footer sticks to the bottom
+          backgroundColor: theme.palette.background.default,
+          py: 2,
+        }}
+      >
+        <Footer />
       </Box>
     </Box>
   );

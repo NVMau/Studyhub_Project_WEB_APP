@@ -2,9 +2,12 @@ import { useEffect } from "react";
 import { CssBaseline } from "@mui/material";
 import AppRoutes from "./routes/AppRoutes";
 import keycloak from "./keycloak"; // Nhập keycloak instance từ file keycloak của bạn
+import { useDarkMode } from './DarkModeContext';
+import { lightTheme, darkTheme } from './theme';
+import { ThemeProvider } from '@mui/material/styles';
 
 function App() {
-
+  const { darkMode } = useDarkMode();
   // Hàm để kiểm tra và cập nhật token khi ứng dụng khởi động
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -24,8 +27,10 @@ function App() {
 
   return (
     <>
-      <CssBaseline />
-      <AppRoutes />
+      <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
+        <AppRoutes />
+      </ThemeProvider>
     </>
   );
 }

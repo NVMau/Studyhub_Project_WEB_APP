@@ -14,6 +14,9 @@ import MoreIcon from "@mui/icons-material/MoreVert";
 import { logOut } from "../services/authenticationService";
 import keycloak from "../keycloak";
 import { useNavigate } from "react-router-dom";
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { useDarkMode } from '../DarkModeContext';
 
 
 
@@ -66,6 +69,8 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function Header() {
+const { darkMode, setDarkMode } = useDarkMode(); 
+
   const navigate = useNavigate()
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
@@ -188,7 +193,7 @@ export default function Header() {
             height: "35px",
             borderRadius: 6,
           }}
-          src="/logo/devteria-logo.png"
+          src="/logo/skilhublogo.png"
         ></Box>
       </IconButton>
       <Search>
@@ -215,7 +220,19 @@ export default function Header() {
           <Badge badgeContent={17} color="error">
             <NotificationsIcon />
           </Badge>
+          
         </IconButton>
+        {/* Dark mode toggle button */}
+        <IconButton
+          size="large"
+          edge="end"
+          aria-label="toggle dark mode"
+          color="inherit"
+          onClick={() => setDarkMode(!darkMode)}
+        >
+          {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+        </IconButton>
+        
         <IconButton
           size="large"
           edge="end"
