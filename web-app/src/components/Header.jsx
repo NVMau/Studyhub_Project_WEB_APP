@@ -11,13 +11,21 @@ import AccountCircle from "@mui/icons-material/AccountCircle";
 import MailIcon from "@mui/icons-material/Mail";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import MoreIcon from "@mui/icons-material/MoreVert";
-import { logOut } from "../services/authenticationService";
-import keycloak from "../keycloak";
 import { useNavigate } from "react-router-dom";
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import { useDarkMode } from '../DarkModeContext';
-
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
+import { useDarkMode } from "../DarkModeContext";
+import { useState,useEffect } from "react";
+import Typography from "@mui/material/Typography";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import TextField from "@mui/material/TextField";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
+import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
+import { getMyProfile } from "../services/userService";
+import { submitOrder } from "../services/paymentService";
 
 
 const Search = styled("div")(({ theme }) => ({
@@ -46,13 +54,29 @@ const SearchIconWrapper = styled("div")(({ theme }) => ({
   justifyContent: "center",
 }));
 
-const clearCookies = () => {
-  document.cookie.split(";").forEach((cookie) => {
-    document.cookie = cookie
-      .replace(/^ +/, "")
-      .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
-  });
-};
+const CoinContainer = styled("div")(({ theme }) => ({
+  position: "relative",
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: alpha(theme.palette.common.white, 0.15),
+  "&:hover": {
+    backgroundColor: alpha(theme.palette.common.white, 0.25),
+  },
+  paddingLeft: theme.spacing(1),
+  paddingRight: theme.spacing(0.2),
+  paddingBottom: theme.spacing(0.1),
+  paddingTop: theme.spacing(0.1),
+
+  display: "flex",
+  alignItems: "center",
+}));
+
+// const clearCookies = () => {
+//   document.cookie.split(";").forEach((cookie) => {
+//     document.cookie = cookie
+//       .replace(/^ +/, "")
+//       .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
+//   });
+// };
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: "inherit",
@@ -69,9 +93,16 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function Header() {
-const { darkMode, setDarkMode } = useDarkMode(); 
+  const [profile, setProfile] = useState({});
+  const [amount, setAmount] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [snackSeverity, setSnackSeverity] = useState("info");
+  const [snackBarOpen, setSnackBarOpen] = useState(false);
+  const [snackBarMessage, setSnackBarMessage] = useState("");
 
-  const navigate = useNavigate()
+  const { darkMode, setDarkMode } = useDarkMode();
+
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState(null);
 
@@ -98,7 +129,7 @@ const { darkMode, setDarkMode } = useDarkMode();
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-  
+
     // Điều hướng về trang đăng nhập
     navigate("/login");
   };
@@ -176,6 +207,52 @@ const { darkMode, setDarkMode } = useDarkMode();
       </MenuItem>
     </Menu>
   );
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleDeposit = async () => {
+    if (!profile.profileId) {
+      console.error("Profile ID không tồn tại");
+      return;
+    }
+    console.log(`Nạp số tiền: ${amount}`);
+    try {
+      const result = await submitOrder(amount, profile.profileId);
+      console.log("Order submitted:", result.data);
+      console.log("Order submitted:", result);
+      window.location.href = result.data;
+    
+
+    } catch (error) {
+      console.error("Failed to submit order:", error);
+    }
+    setOpen(false);
+  };
+  
+
+  const getProfile = async () => {
+    try {
+      const response = await getMyProfile();
+      const data = response.data;
+
+      console.log("Response data:", data); // In ra dữ liệu response
+
+      setProfile(data);
+    } catch (error) {
+      const errorResponse = error.response?.data;
+      setSnackSeverity("error");
+      setSnackBarMessage(errorResponse?.message ?? error.message);
+      setSnackBarOpen(true);
+  };}
+
+  useEffect(() => {
+getProfile();
+}, []);
 
   return (
     <>
@@ -220,7 +297,6 @@ const { darkMode, setDarkMode } = useDarkMode();
           <Badge badgeContent={17} color="error">
             <NotificationsIcon />
           </Badge>
-          
         </IconButton>
         {/* Dark mode toggle button */}
         <IconButton
@@ -232,7 +308,7 @@ const { darkMode, setDarkMode } = useDarkMode();
         >
           {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
         </IconButton>
-        
+
         <IconButton
           size="large"
           edge="end"
@@ -245,6 +321,48 @@ const { darkMode, setDarkMode } = useDarkMode();
           <AccountCircle />
         </IconButton>
       </Box>
+
+      <Box sx={{ display: "flex", alignItems: "center", ml: 0.5 }}>
+      {/* Số dư và icon với nền đã được stylize */}
+      <CoinContainer
+      onClick={handleClickOpen}>
+        
+        <Typography
+          variant="h7"
+          sx={{
+            paddingRight: "5px",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          {profile.coin}
+        </Typography>
+        <MonetizationOnIcon /> {/* Icon coin bên cạnh số dư */}
+      </CoinContainer>
+    </Box>
+
+      {/* Modal nạp tiền */}
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle textAlign={"center"}>Nạp tiền VNPay</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="amount"
+            label="Nhập số tiền cần nạp (VND)"
+            type="number"
+            fullWidth
+            variant="standard"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Hủy</Button>
+          <Button onClick={handleDeposit}>Nạp tiền</Button>
+        </DialogActions>
+      </Dialog>
+
       <Box sx={{ display: { xs: "flex", md: "none" } }}>
         <IconButton
           size="large"

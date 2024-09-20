@@ -25,3 +25,24 @@ export const getRegisteredCourses = async () => {
 export const getTeachingCourses = async () => {
   return await httpClient.get(API.GET_TEACHERS_COURSES);
 };
+
+// Hàm lấy danh sách người dùng
+export const getAllUsers = async () => {
+  return await httpClient.get(API.GET_ALL_USERS);
+};
+
+// Hàm tạo người dùng mới
+export const createUser = async (userData) => {
+  return await httpClient.post(API.REGISTRATION, userData);
+};
+
+// Hàm cập nhật thông tin người dùng
+export const updateUser = async (userData) => {
+  return await httpClient.put(`${API.UPDATE_USER}/${userData.profileId}`, userData);
+};
+
+// Hàm xóa người dùng
+export const deleteUser = async (userId) => {
+  return await httpClient.delete(`${API.DELETE_USER}/${userId}`);
+};
+

@@ -9,6 +9,11 @@ import CoursesStudent from "../pages/CoursesStudent";
 import LectureStudent from "../pages/LectureStudent";
 import LectureTeacher from "../pages/LectureTeacher";
 import SignIn from "../pages/sign-in/SignIn";
+import UserManagement from "../pages/UserManagement";
+import CourseManagement from "../pages/CourseManagement";
+
+
+
 
 const AppRoutes = () => {
   return (
@@ -23,6 +28,15 @@ const AppRoutes = () => {
         <Route path="/courses-student" element={<CoursesStudent />} />
         <Route path="/lectures-student/:courseId" element={<LectureStudent />} />
         <Route path="/lectures-teacher/:courseId" element={<LectureTeacher />} />
+
+
+
+        //role quản lý người dùng
+        <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/course-management" element={<CourseManagement />} />
+
+
+
 
         {/* Bảo vệ các route sau khi đăng nhập */}
         <Route path="/" element={<ProtectedRoute />}>

@@ -244,6 +244,7 @@ export default function Home() {
                   <Typography gutterBottom variant="h4" component="div">
                     {course.name}
                   </Typography>
+                  
                   <Typography gutterBottom variant="h7" component="div">
                     Giá: {course.price}đ
                   </Typography>

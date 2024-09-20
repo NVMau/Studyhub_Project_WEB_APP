@@ -34,7 +34,6 @@ export default function LecturePage() {
   const [selectedLectureId, setSelectedLectureId] = useState(null); // Theo dõi bài giảng được chọn để làm bài
   const [profile, setProfile] = useState({});
 
-
   const getProfile = async () => {
     try {
       const response = await getMyProfile();
@@ -77,11 +76,7 @@ export default function LecturePage() {
         userAnswers: Object.values(userAnswers),
       };
       // Gửi câu trả lời đến backend
-      await submitExamResult(
-        assignment.id,
-        profile.profileId,
-        resultPayload
-      );
+      await submitExamResult(assignment.id, profile.profileId, resultPayload);
       alert("Bài thi đã được gửi thành công!");
     } catch (error) {
       console.error("Lỗi khi gửi bài thi:", error);
@@ -100,8 +95,10 @@ export default function LecturePage() {
       return;
     }
 
-    console.log(`Fetching assignment for lecture ID: ${lectureId}, Profile ID: ${profile?.profileId}`);
-    
+    console.log(
+      `Fetching assignment for lecture ID: ${lectureId}, Profile ID: ${profile?.profileId}`
+    );
+
     try {
       // Đầu tiên, lấy assignment trước dựa trên lectureId
       const assignmentResponse = await getAssignmentsByLectureId(lectureId);
@@ -110,7 +107,7 @@ export default function LecturePage() {
         setAssignment(assignment);
 
         console.log("Fetching exam result for assignment ID:", assignment.id);
-        
+
         // Sau đó, gọi API kết quả bài thi bằng assignmentId
         const examResultResponse = await getExamResultByLectureId(
           assignment.id, // Đây là assignmentId, không phải lectureId
@@ -118,7 +115,10 @@ export default function LecturePage() {
         );
 
         if (examResultResponse?.data) {
-          console.log("Exam result data available for assignment:", assignment.id);
+          console.log(
+            "Exam result data available for assignment:",
+            assignment.id
+          );
           setExamResult(examResultResponse.data); // Đặt kết quả bài thi
           setAssignment(null); // Nếu đã làm bài thi, không cần hiển thị assignment
         } else {
@@ -137,9 +137,6 @@ export default function LecturePage() {
       setLoadingAssignment(false); // Kết thúc load
     }
   };
-
-  
-
 
   return (
     <Scene>
@@ -210,31 +207,39 @@ export default function LecturePage() {
                     </Box>
                   )}
 
-                  {/* Nếu bài tập đã làm, hiển thị kết quả */}
-                  {examResult && selectedLectureId === lecture.id ? (
-                    <Box sx={{ mt: 5 }}>
-                      <Typography variant="h5" gutterBottom>
-                        Điểm của bạn: {examResult.score}
-                      </Typography>
-                      {examResult.questionResults.map((result, index) => (
-                        <Box key={index} sx={{ mb: 3 }}>
-                          <Typography variant="body1">
-                            Câu {index + 1}: {result.questionText}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color={result.isCorrect ? "green" : "red"}
-                          >
-                            Câu trả lời của bạn: {result.userAnswer}{" "}
-                            {result.isCorrect ? "(Đúng)" : "(Sai)"}
-                          </Typography>
-                          <Typography variant="body2">
-                            Đáp án đúng: {result.correctAnswer}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </Box>
-                  ) : (
+{examResult && selectedLectureId === lecture.id ? (
+  <Box sx={{ mt: 5 }}>
+    <Typography variant="h5" gutterBottom>
+      Điểm của bạn: {examResult.score}
+    </Typography>
+    {examResult.questionResults.map((result, index) => (
+      <Box
+        key={index}
+        sx={{
+          mb: 3,
+          p: 2,
+          border: '1px solid',
+          borderColor: result.correct ? 'green' : 'red',
+          backgroundColor: result.correct ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)',
+          borderRadius: '5px',
+        }}
+      >
+        <Typography variant="body1" fontWeight="bold">
+          Câu {index + 1}: {result.questionText}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: result.correct ? 'green' : 'red', fontWeight: 'bold' }}
+        >
+          Câu trả lời của bạn: {result.userAnswer} {result.correct ? "(Đúng)" : "(Sai)"}
+        </Typography>
+        <Typography variant="body2">
+          Đáp án đúng: {result.correctAnswer}
+        </Typography>
+      </Box>
+    ))}
+  </Box>
+) : (
                     <>
                       {/* Hiển thị nút làm bài tập nếu chưa làm */}
                       <Button
@@ -247,14 +252,15 @@ export default function LecturePage() {
                       </Button>
 
                       {/* Hiển thị loading khi đang lấy bài tập */}
-                      {loadingAssignment && selectedLectureId === lecture.id && (
-                        <Typography
-                          variant="body1"
-                          sx={{ textAlign: "center", mt: 3 }}
-                        >
-                          Đang tải bài tập...
-                        </Typography>
-                      )}
+                      {loadingAssignment &&
+                        selectedLectureId === lecture.id && (
+                          <Typography
+                            variant="body1"
+                            sx={{ textAlign: "center", mt: 3 }}
+                          >
+                            Đang tải bài tập...
+                          </Typography>
+                        )}
 
                       {/* Hiển thị bài tập nếu chưa làm */}
                       {assignment &&
