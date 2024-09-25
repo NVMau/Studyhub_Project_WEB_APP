@@ -11,11 +11,15 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Rating,
+  TextField,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import keycloak from "../keycloak"; // Keycloak to get user roles
 import { getLecturesByCourseId } from "../services/lectureService"; // API service
 import { useParams } from "react-router-dom"; // Import useParams để lấy courseId
 import Scene from "./Scene";
+import { createRating,getRatingbyCourseAndUser   } from "../services/RatingsService";
 import { getMyProfile } from "../services/userService";
 
 import {
@@ -33,6 +37,20 @@ export default function LecturePage() {
   const [loadingAssignment, setLoadingAssignment] = useState(false); // Để kiểm tra trạng thái load bài tập
   const [selectedLectureId, setSelectedLectureId] = useState(null); // Theo dõi bài giảng được chọn để làm bài
   const [profile, setProfile] = useState({});
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState("");
+  const [hasRated, setHasRated] = useState(false); // Define the hasRated state
+  
+  const [snackSeverity, setSnackSeverity] = useState("info");
+  const [snackBarOpen, setSnackBarOpen] = useState(false);
+  const [snackBarMessage, setSnackBarMessage] = useState("");
+
+  const handleCloseSnackBar = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackBarOpen(false);
+  };
 
   const getProfile = async () => {
     try {
@@ -48,18 +66,104 @@ export default function LecturePage() {
     }
   };
 
+  const handleSubmitReview = async () => {
+    const studentId = profile.profileId;
+
+    if (!stars || !comment) {
+      alert("Vui lòng đánh giá và viết nhận xét!");
+      return;
+    }
+    try {
+      console.log(studentId, courseId, stars, comment);
+      await createRating({ studentId, courseId, stars, comment });
+      setSnackSeverity("success");
+      setSnackBarMessage("Đánh gía thành công");
+      setSnackBarOpen(true);
+    } catch (error) {
+      const errorResponse = error.response?.data;
+      setSnackSeverity("error");
+      console.log("errorResponse data:", error);
+
+      // Kiểm tra xem lỗi có phải là do đã đăng ký khóa học trước đó
+
+      setSnackBarMessage("Lỗi khi thực hiện đánh giá");
+
+      setSnackBarOpen(true);
+
+      // Gửi dữ liệu rating và review lên backend tại đây.
+    }
+  };
+
   useEffect(() => {
-    const fetchLectures = async () => {
+    const fetchLecturesAndResults = async () => {
       try {
+        // Lấy danh sách bài giảng
         const response = await getLecturesByCourseId(courseId);
-        getProfile();
-        setLectures(response.data);
+        const lectures = response.data;
+
+        // Kiểm tra từng bài giảng xem có kết quả bài thi hay không
+        for (let lecture of lectures) {
+          const assignmentResponse = await getAssignmentsByLectureId(
+            lecture.id
+          );
+
+          if (assignmentResponse.data && assignmentResponse.data.length > 0) {
+            const assignment = assignmentResponse.data[0];
+
+            // Kiểm tra kết quả bài thi cho từng assignment
+            const examResultResponse = await getExamResultByLectureId(
+              assignment.id,
+              profile.profileId
+            );
+
+            if (examResultResponse?.data) {
+              // Nếu có kết quả, lưu kết quả vào state
+              lecture.examResult = examResultResponse.data;
+            } else {
+              // Nếu chưa có kết quả, lưu assignment
+              lecture.assignment = assignment;
+              // Trộn câu trả lời nếu chưa làm
+              lecture.assignment.questions = assignment.questions.map(
+                (question) => ({
+                  ...question,
+                  shuffledOptions: shuffleArray(question.options),
+                })
+              );
+            }
+          }
+        }
+
+        setLectures(lectures);
       } catch (error) {
-        console.error("Lỗi khi lấy danh sách bài giảng:", error);
+        console.error("Lỗi khi lấy dữ liệu bài giảng hoặc bài thi:", error);
       }
     };
-    fetchLectures();
-  }, [courseId]);
+    const fetchRating = async () => {
+      try {
+        const response = await getRatingbyCourseAndUser(
+          courseId,
+          profile.profileId
+        );
+        if (response.data) {
+          // Đã có đánh giá
+          setStars(response.data.stars);
+          setComment(response.data.comment);
+          setHasRated(true); // Đặt trạng thái đã đánh giá
+        }
+      } catch (error) {
+        console.error("Error fetching rating", error);
+      }
+    };
+
+    // Lấy thông tin profile trước khi gọi API bài giảng
+    const loadProfileAndLectures = async () => {
+      await getProfile();
+      fetchLecturesAndResults();
+    };
+    
+    fetchRating();
+    loadProfileAndLectures();
+  }, [courseId, profile.profileId]);
 
   // Xử lý khi học sinh chọn câu trả lời
   const handleAnswerChange = (questionIndex, answer) => {
@@ -68,6 +172,13 @@ export default function LecturePage() {
       [questionIndex]: answer,
     }));
   };
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
 
   // Gửi kết quả bài tập
   const handleSubmitExam = async () => {
@@ -86,8 +197,8 @@ export default function LecturePage() {
 
   // Lấy bài tập cho từng bài giảng khi học sinh muốn làm bài
   const handleFetchAssignment = async (lectureId) => {
-    setLoadingAssignment(true); // Bắt đầu load
-    setSelectedLectureId(lectureId); // Đặt bài giảng được chọn
+    setLoadingAssignment(true);
+    setSelectedLectureId(lectureId);
 
     if (!profile?.profileId) {
       console.error("Profile ID is not ready yet.");
@@ -95,46 +206,40 @@ export default function LecturePage() {
       return;
     }
 
-    console.log(
-      `Fetching assignment for lecture ID: ${lectureId}, Profile ID: ${profile?.profileId}`
-    );
-
     try {
-      // Đầu tiên, lấy assignment trước dựa trên lectureId
+      // Lấy bài tập trước
       const assignmentResponse = await getAssignmentsByLectureId(lectureId);
       if (assignmentResponse.data && assignmentResponse.data.length > 0) {
-        const assignment = assignmentResponse.data[0]; // Giả sử bạn chỉ có một assignment
-        setAssignment(assignment);
+        const assignment = assignmentResponse.data[0];
 
-        console.log("Fetching exam result for assignment ID:", assignment.id);
-
-        // Sau đó, gọi API kết quả bài thi bằng assignmentId
+        // Kiểm tra xem đã có kết quả bài thi chưa
         const examResultResponse = await getExamResultByLectureId(
-          assignment.id, // Đây là assignmentId, không phải lectureId
+          assignment.id,
           profile.profileId
         );
 
         if (examResultResponse?.data) {
-          console.log(
-            "Exam result data available for assignment:",
-            assignment.id
-          );
-          setExamResult(examResultResponse.data); // Đặt kết quả bài thi
-          setAssignment(null); // Nếu đã làm bài thi, không cần hiển thị assignment
+          // Nếu đã có kết quả bài thi, hiển thị kết quả và không cho phép làm bài
+          setExamResult(examResultResponse.data);
+          setAssignment(null); // Không hiển thị assignment nếu đã có kết quả
         } else {
-          console.log("No exam result found, assignment is available");
-          setExamResult(null); // Nếu chưa có kết quả thì để người dùng làm bài
+          // Nếu chưa có kết quả, trộn câu trả lời và hiển thị bài tập
+          assignment.questions = assignment.questions.map((question) => ({
+            ...question,
+            shuffledOptions: shuffleArray(question.options),
+          }));
+          setAssignment(assignment);
+          setExamResult(null); // Reset kết quả bài thi
         }
       } else {
         setAssignment(null);
-        console.log("No assignment found for this lecture.");
         alert("Không có bài tập nào cho bài giảng này.");
       }
     } catch (error) {
       console.error("Lỗi khi lấy dữ liệu bài tập hoặc kết quả:", error);
       setAssignment(null);
     } finally {
-      setLoadingAssignment(false); // Kết thúc load
+      setLoadingAssignment(false);
     }
   };
 
@@ -144,7 +249,7 @@ export default function LecturePage() {
         <Typography
           variant="h4"
           gutterBottom
-          sx={{ textAlign: "center", fontWeight: "bold" }} // Canh giữa chữ
+          sx={{ textAlign: "left", fontWeight: "bold" }} // Canh giữa chữ
         >
           DANH SÁCH BÀI GIẢNG
         </Typography>
@@ -164,29 +269,48 @@ export default function LecturePage() {
                 }}
               >
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h5">{lecture.title}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {lecture.content}
+                  <Typography
+                    variant="h4"
+                    textAlign={"center"}
+                    fontWeight={"bold"}
+                    paddingBottom={10}
+                  >
+                    {lecture.title}
+                  </Typography>
+                  <Typography variant="h7" color="textSecondary">
+                    <strong>Nội dung chính:</strong> {lecture.content}
                   </Typography>
 
                   {/* Hiển thị file PDF nếu có */}
                   {lecture.fileUrl && (
-                    <Box sx={{ marginTop: 2 }}>
-                      <Typography variant="h6">Tài liệu:</Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        marginTop: 2,
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography variant="h7" fontWeight={"bold"}>
+                        Tài liệu:
+                      </Typography>
                       <Link
                         href={lecture.fileUrl}
                         target="_blank"
                         rel="noopener"
+                        paddingRight={2}
+                        variant="h7"
                       >
                         {lecture.fileUrl.split("/").pop()}
                       </Link>
                     </Box>
                   )}
-
                   {/* Hiển thị nhiều video nếu có */}
                   {lecture.videoUrls && lecture.videoUrls.length > 0 && (
                     <Box sx={{ marginTop: 2 }}>
-                      <Typography variant="h6">Video về bài giảng:</Typography>
+                      <Typography variant="h6" fontWeight={"bold"}>
+                        Video về bài giảng:
+                      </Typography>
                       {lecture.videoUrls.map((videoUrl, index) => (
                         <Box
                           key={index}
@@ -207,39 +331,45 @@ export default function LecturePage() {
                     </Box>
                   )}
 
-{examResult && selectedLectureId === lecture.id ? (
-  <Box sx={{ mt: 5 }}>
-    <Typography variant="h5" gutterBottom>
-      Điểm của bạn: {examResult.score}
-    </Typography>
-    {examResult.questionResults.map((result, index) => (
-      <Box
-        key={index}
-        sx={{
-          mb: 3,
-          p: 2,
-          border: '1px solid',
-          borderColor: result.correct ? 'green' : 'red',
-          backgroundColor: result.correct ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)',
-          borderRadius: '5px',
-        }}
-      >
-        <Typography variant="body1" fontWeight="bold">
-          Câu {index + 1}: {result.questionText}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: result.correct ? 'green' : 'red', fontWeight: 'bold' }}
-        >
-          Câu trả lời của bạn: {result.userAnswer} {result.correct ? "(Đúng)" : "(Sai)"}
-        </Typography>
-        <Typography variant="body2">
-          Đáp án đúng: {result.correctAnswer}
-        </Typography>
-      </Box>
-    ))}
-  </Box>
-) : (
+                  {examResult && selectedLectureId === lecture.id ? (
+                    <Box sx={{ mt: 5 }}>
+                      <Typography variant="h5" gutterBottom>
+                        Điểm của bạn: {examResult.score}
+                      </Typography>
+                      {examResult.questionResults.map((result, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            mb: 3,
+                            p: 2,
+                            border: "1px solid",
+                            borderColor: result.correct ? "green" : "red",
+                            backgroundColor: result.correct
+                              ? "rgba(0, 255, 0, 0.1)"
+                              : "rgba(255, 0, 0, 0.1)",
+                            borderRadius: "5px",
+                          }}
+                        >
+                          <Typography variant="body1" fontWeight="bold">
+                            Câu {index + 1}: {result.questionText}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: result.correct ? "green" : "red",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Câu trả lời của bạn: {result.userAnswer}{" "}
+                            {result.correct ? "(Đúng)" : "(Sai)"}
+                          </Typography>
+                          <Typography variant="body2">
+                            Đáp án đúng: {result.correctAnswer}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : (
                     <>
                       {/* Hiển thị nút làm bài tập nếu chưa làm */}
                       <Button
@@ -263,56 +393,106 @@ export default function LecturePage() {
                         )}
 
                       {/* Hiển thị bài tập nếu chưa làm */}
-                      {assignment &&
-                      selectedLectureId === lecture.id &&
-                      assignment.questions &&
-                      assignment.questions.length > 0 ? (
+                      {examResult && selectedLectureId === lecture.id ? (
                         <Box sx={{ mt: 5 }}>
                           <Typography variant="h5" gutterBottom>
-                            {assignment.title || "Bài tập không có tiêu đề"}
+                            Điểm của bạn: {examResult.score}
                           </Typography>
-                          {assignment.questions.map((question, index) => (
-                            <Box key={index} sx={{ mb: 3 }}>
-                              <Typography variant="body1">
-                                Câu {index + 1}: {question.questionText}
+                          {examResult.questionResults.map((result, index) => (
+                            <Box
+                              key={index}
+                              sx={{
+                                mb: 3,
+                                p: 2,
+                                border: "1px solid",
+                                borderColor: result.correct ? "green" : "red",
+                                backgroundColor: result.correct
+                                  ? "rgba(0, 255, 0, 0.1)"
+                                  : "rgba(255, 0, 0, 0.1)",
+                                borderRadius: "5px",
+                              }}
+                            >
+                              <Typography variant="body1" fontWeight="bold">
+                                Câu {index + 1}: {result.questionText}
                               </Typography>
-                              <RadioGroup
-                                name={`question-${index}`}
-                                value={userAnswers[index] || ""}
-                                onChange={(e) =>
-                                  handleAnswerChange(index, e.target.value)
-                                }
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: result.correct ? "green" : "red",
+                                  fontWeight: "bold",
+                                }}
                               >
-                                {question.options.map((option, optionIndex) => (
-                                  <FormControlLabel
-                                    key={optionIndex}
-                                    value={option}
-                                    control={<Radio />}
-                                    label={option}
-                                  />
-                                ))}
-                              </RadioGroup>
+                                Câu trả lời của bạn: {result.userAnswer}{" "}
+                                {result.correct ? "(Đúng)" : "(Sai)"}
+                              </Typography>
+                              <Typography variant="body2">
+                                Đáp án đúng: {result.correctAnswer}
+                              </Typography>
                             </Box>
                           ))}
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleSubmitExam}
-                            sx={{ mt: 2 }}
-                          >
-                            Nộp bài
-                          </Button>
                         </Box>
                       ) : (
-                        !loadingAssignment &&
-                        selectedLectureId === lecture.id && (
-                          <Typography
-                            variant="body1"
-                            sx={{ mt: 3, textAlign: "center" }}
-                          >
-                            Không có bài tập nào được tìm thấy.
-                          </Typography>
-                        )
+                        <>
+                          {/* Phần render bài tập nếu chưa có kết quả */}
+                          {assignment &&
+                          selectedLectureId === lecture.id &&
+                          assignment.questions &&
+                          assignment.questions.length > 0 ? (
+                            <Box sx={{ mt: 5 }}>
+                              <Typography
+                                variant="h6"
+                                gutterBottom
+                                sx={{ fontWeight: "bold" }}
+                              >
+                                {assignment.title || "Bài tập không có tiêu đề"}
+                              </Typography>
+                              {assignment.questions.map((question, index) => (
+                                <Box key={index} sx={{ mb: 3 }}>
+                                  <Typography variant="body1">
+                                    Câu {index + 1}: {question.questionText}
+                                  </Typography>
+
+                                  <RadioGroup
+                                    name={`question-${index}`}
+                                    value={userAnswers[index] || ""}
+                                    onChange={(e) =>
+                                      handleAnswerChange(index, e.target.value)
+                                    }
+                                  >
+                                    {question.shuffledOptions.map(
+                                      (option, optionIndex) => (
+                                        <FormControlLabel
+                                          key={optionIndex}
+                                          value={option}
+                                          control={<Radio />}
+                                          label={option}
+                                        />
+                                      )
+                                    )}
+                                  </RadioGroup>
+                                </Box>
+                              ))}
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleSubmitExam}
+                                sx={{ mt: 2 }}
+                              >
+                                Nộp bài
+                              </Button>
+                            </Box>
+                          ) : (
+                            !loadingAssignment &&
+                            selectedLectureId === lecture.id && (
+                              <Typography
+                                variant="body1"
+                                sx={{ mt: 3, textAlign: "center" }}
+                              >
+                                Không có bài tập nào được tìm thấy.
+                              </Typography>
+                            )
+                          )}
+                        </>
                       )}
                     </>
                   )}
@@ -321,7 +501,56 @@ export default function LecturePage() {
             </Grid>
           ))}
         </Grid>
+        <Box sx={{ mt: 5 }}>
+          {hasRated ? (
+            <Box>
+              <Typography variant="h6">Bạn đã đánh giá khóa học này</Typography>
+              <Rating value={stars} readOnly />
+              <Typography>{comment}</Typography>
+            </Box>
+          ) : (
+            <Box>
+              <Typography variant="h6">Đánh giá khóa học</Typography>
+              <Rating
+                value={stars}
+                onChange={(event, newValue) => setStars(newValue)}
+              />
+              <TextField
+                fullWidth
+                label="Nhận xét của bạn"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                multiline
+                rows={4}
+                sx={{ mt: 2 }}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSubmitReview}
+                sx={{ mt: 2 }}
+              >
+                Gửi đánh giá
+              </Button>
+            </Box>
+          )}
+        </Box>
       </Box>
+      <Snackbar
+        open={snackBarOpen}
+        onClose={handleCloseSnackBar}
+        autoHideDuration={6000}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackBar}
+          severity={snackSeverity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackBarMessage}
+        </Alert>
+      </Snackbar>
     </Scene>
   );
 }

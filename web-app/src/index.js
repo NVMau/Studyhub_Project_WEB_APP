@@ -12,7 +12,6 @@ import { DarkModeProvider } from './DarkModeContext';
 
 const Main = () => {
   const [keycloakInitialized, setKeycloakInitialized] = useState(false);
-  const [darkMode, setDarkMode] = useState(false); // State để theo dõi chế độ sáng/tối
 
   useEffect(() => {
     keycloak

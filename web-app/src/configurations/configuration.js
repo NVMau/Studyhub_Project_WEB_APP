@@ -43,7 +43,55 @@ export const API = {
 
 
   //Payment 
-  PAYMENT: "/api/profiles/submitOrder"
+  PAYMENT: "/api/profiles/submitOrder",
+
+  //API cho thống kê
+  USER_COUNT_SYS: "/api/profiles/user-count",
+
+
+  //Đếm số lượng người dung trong khóa học 
+  
+  COUNT_USER_REGIST:"/api/enrollments/course",
+
+  UPDATE_AVATAR: "/api/profiles/update-avatar",
+
+
+
+  //Blog 
+  GET_ALL_POST:"/api/blog/posts",
+  CREATE_POST:"/api/blog/posts",
+
+  GET_COMMENTBYPOSTID:"/api/blog/comments",
+
+  ADD_COMMENT:"/api/blog/comments",
+
+  GET_INTERACTIONBYPOSTID: "/api/blog/interactions",
+
+  ADD_INTERACTION: "/api/blog/interactions",
+
+
+
+  //Rating 
+  CREATE_RATING:"/api/enrollments/ratings/rate",
+  GET_RATING: "/api/enrollments/ratings/course",
+
+
+  //Chat AI
+  SENDCHAT: "/api/chat/message",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   
 };

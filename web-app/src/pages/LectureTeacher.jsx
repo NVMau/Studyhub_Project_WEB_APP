@@ -104,6 +104,7 @@ export default function LectureTeacher() {
       alert("Bài giảng đã được thêm thành công!");
       const response = await getLecturesByCourseId(courseId);
       setLectures(response.data); // Làm mới danh sách bài giảng
+      
     } catch (error) {
       console.error("Error creating lecture:", error);
       alert("Lỗi khi thêm bài giảng.");
@@ -211,14 +212,16 @@ export default function LectureTeacher() {
                     <strong>Nội dung chính:</strong> {lecture.content}
                   </Typography>
                   {lecture.fileUrl && (
-                    <Box sx={{ marginTop: 2 }}>
-                      <Typography variant="h6" fontWeight={"bold"}>
+                    <Box sx={{ display: "flex", marginTop: 2, flexDirection: "row",  alignItems: "center" }}>
+                      <Typography variant="h7" fontWeight={"bold"}>
                         Tài liệu:
                       </Typography>
                       <Link
                         href={lecture.fileUrl}
                         target="_blank"
                         rel="noopener"
+                        paddingRight={2}
+                        variant="h7"
                       >
                         {lecture.fileUrl.split("/").pop()}
                       </Link>

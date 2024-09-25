@@ -5,6 +5,7 @@ import keycloak from "./keycloak"; // Nhập keycloak instance từ file keycloa
 import { useDarkMode } from './DarkModeContext';
 import { lightTheme, darkTheme } from './theme';
 import { ThemeProvider } from '@mui/material/styles';
+import { ProfileProvider } from './context/ProfileContext';
 
 function App() {
   const { darkMode } = useDarkMode();
@@ -27,10 +28,14 @@ function App() {
 
   return (
     <>
-      <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+    <ProfileProvider>
+
+    <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
         <CssBaseline />
         <AppRoutes />
       </ThemeProvider>
+    </ProfileProvider>
+      
     </>
   );
 }

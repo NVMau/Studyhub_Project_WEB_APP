@@ -12,9 +12,11 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import ChatIcon from "@mui/icons-material/Chat";
 import LocalLibraryIcon from "@mui/icons-material/LocalLibrary";
 import { useNavigate } from "react-router-dom";
+import EqualizerIcon from '@mui/icons-material/Equalizer';
 import useUserRoles from "../services/useUserRoles"; // Import custom hook
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import ForumIcon from '@mui/icons-material/Forum';
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import Collapse from "@mui/material/Collapse";
 import Typography from "@mui/material/Typography";
@@ -106,13 +108,13 @@ function SideMenu() {
 
         {/* Khóa học Item */}
         <ListItem key={"chat"} disablePadding>
-          <ListItemButton>
+          <ListItemButton onClick={() => navigate("/chat-ai")}>
             <ListItemIcon>
               {/* Khóa học icon */}
               <ChatIcon />
             </ListItemIcon>
             <ListItemText
-              primary={"Chat"}
+              primary={"SKILL-HUB-AI"}
               primaryTypographyProps={{ style: { fontWeight: "bold" } }}
             />
           </ListItemButton>
@@ -127,6 +129,19 @@ function SideMenu() {
             </ListItemIcon>
             <ListItemText
               primary={"Thống Kê"}
+              primaryTypographyProps={{ style: { fontWeight: "bold" } }}
+            />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem key={"blog"} disablePadding>
+        <ListItemButton onClick={() => navigate("/blog")}>
+            <ListItemIcon>
+              {/* Khóa học icon */}
+              <ForumIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary={"Diễn đàn"}
               primaryTypographyProps={{ style: { fontWeight: "bold" } }}
             />
           </ListItemButton>

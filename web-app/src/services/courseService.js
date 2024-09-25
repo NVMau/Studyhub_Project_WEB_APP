@@ -30,10 +30,6 @@ export const searchCourses = async (keyword, teacherName, minPrice, maxPrice) =>
 
   return await httpClient.get(`${API.GET_ALLCOURSE}?${params.toString()}`);
 };
-
-
-
-
 export const deleteCourse = async (courseId) => {
   return await httpClient.delete(`${API.DELETE_COURSE}/${courseId}`);
 };
@@ -41,4 +37,9 @@ export const deleteCourse = async (courseId) => {
 
 export const updateCourse = async (courseData) => {
   return await httpClient.put(`${API.UPDATE_COURSE}/${courseData.id}`, courseData);
+};
+
+
+export const getEnrollmentCountByCourseId = async (courseId) => {
+  return await httpClient.get(`${API.COUNT_USER_REGIST}/${courseId}/count`);
 };

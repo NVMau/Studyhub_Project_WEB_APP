@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { useDarkMode } from "../DarkModeContext";
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -26,6 +26,7 @@ import Button from "@mui/material/Button";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import { getMyProfile } from "../services/userService";
 import { submitOrder } from "../services/paymentService";
+import { useProfile } from "../context/ProfileContext"; // Import useProfile
 
 
 const Search = styled("div")(({ theme }) => ({
@@ -93,7 +94,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function Header() {
-  const [profile, setProfile] = useState({});
+  const { profile, fetchProfile } = useProfile();
   const [amount, setAmount] = useState(0);
   const [open, setOpen] = useState(false);
   const [snackSeverity, setSnackSeverity] = useState("info");
@@ -211,6 +212,21 @@ export default function Header() {
     setOpen(true);
   };
 
+  const formatCurrency = (value) => {
+    return Number(value)
+      .toLocaleString("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        minimumFractionDigits: 0,
+      })
+      .replace("₫", "")
+      .trim(); // Loại bỏ ký hiệu ₫ nếu không muốn hiển thị
+  };
+  const handleMoneyChange = (event) => {
+    const input = event.target.value.replace(/\./g, ""); // Loại bỏ dấu chấm cũ
+    setAmount(input); // Cập nhật giá trị nhập vào
+  };
+
   const handleClose = () => {
     setOpen(false);
   };
@@ -226,33 +242,15 @@ export default function Header() {
       console.log("Order submitted:", result.data);
       console.log("Order submitted:", result);
       window.location.href = result.data;
-    
-
+      fetchProfile();
     } catch (error) {
       console.error("Failed to submit order:", error);
     }
     setOpen(false);
   };
-  
 
-  const getProfile = async () => {
-    try {
-      const response = await getMyProfile();
-      const data = response.data;
 
-      console.log("Response data:", data); // In ra dữ liệu response
 
-      setProfile(data);
-    } catch (error) {
-      const errorResponse = error.response?.data;
-      setSnackSeverity("error");
-      setSnackBarMessage(errorResponse?.message ?? error.message);
-      setSnackBarOpen(true);
-  };}
-
-  useEffect(() => {
-getProfile();
-}, []);
 
   return (
     <>
@@ -323,38 +321,43 @@ getProfile();
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", ml: 0.5 }}>
-      {/* Số dư và icon với nền đã được stylize */}
-      <CoinContainer
-      onClick={handleClickOpen}>
-        
-        <Typography
-          variant="h7"
-          sx={{
-            paddingRight: "5px",
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          {profile.coin}
-        </Typography>
-        <MonetizationOnIcon /> {/* Icon coin bên cạnh số dư */}
-      </CoinContainer>
-    </Box>
+        {/* Số dư và icon với nền đã được stylize */}
+        <CoinContainer onClick={handleClickOpen}>
+          <Typography
+            variant="h7"
+            sx={{
+              paddingRight: "5px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+           {profile ? profile.coin : "0"} 
+          </Typography>
+          <MonetizationOnIcon /> {/* Icon coin bên cạnh số dư */}
+        </CoinContainer>
+      </Box>
 
       {/* Modal nạp tiền */}
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle textAlign={"center"}>Nạp tiền VNPay</DialogTitle>
         <DialogContent>
+          <Box sx={{ textAlign: "center", marginBottom: 2 }}>
+            <img
+               src="/logo/Logo-VNPAY-QR.png" // Đường dẫn đến logo
+              alt="VNPay Logo"
+              style={{ width: "150px" }} // Điều chỉnh kích thước nếu cần
+            />
+          </Box>
           <TextField
             autoFocus
             margin="dense"
             id="amount"
             label="Nhập số tiền cần nạp (VND)"
-            type="number"
+            type="text" // Chuyển sang "text" để hiển thị số có dấu chấm
             fullWidth
             variant="standard"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            value={formatCurrency(amount)} // Định dạng số tiền
+            onChange={handleMoneyChange} // Xử lý khi nhập giá trị
           />
         </DialogContent>
         <DialogActions>

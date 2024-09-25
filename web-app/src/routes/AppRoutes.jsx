@@ -11,8 +11,9 @@ import LectureTeacher from "../pages/LectureTeacher";
 import SignIn from "../pages/sign-in/SignIn";
 import UserManagement from "../pages/UserManagement";
 import CourseManagement from "../pages/CourseManagement";
-
-
+import StatistSys from "../pages/StatistSys";
+import Blog from "../pages/Blog";
+import ChatAI from "../pages/ChatAI";
 
 
 const AppRoutes = () => {
@@ -23,17 +24,23 @@ const AppRoutes = () => {
         <Route path="/login" element={<SignIn />} />
         <Route path="/createCourses" element={<CreateCourse />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/chat-ai" element={<ChatAI />} />
+
 
         <Route path="/courses-teacher" element={<CoursesTeacher />} />
         <Route path="/courses-student" element={<CoursesStudent />} />
         <Route path="/lectures-student/:courseId" element={<LectureStudent />} />
         <Route path="/lectures-teacher/:courseId" element={<LectureTeacher />} />
+        
 
 
 
         //role quản lý người dùng
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/course-management" element={<CourseManagement />} />
+        <Route path="/statistics" element={<StatistSys />} />
+
+        <Route path="/blog" element={<Blog />} />
 
 
 

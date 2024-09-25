@@ -13,12 +13,17 @@ import {
 } from "@mui/material";
 import Scene from "./Scene";
 import { getTeachers, createCourse } from "../services/courseService"; // Thay thế bằng courseService đã cấu hình sẵn
+import useUserRoles from "../services/useUserRoles"; // Import custom hook
+import { useProfile } from "../context/ProfileContext"; // Import useProfile
+
+
 
 export default function CreateCourse() {
+  const { profile, fetchProfile } = useProfile();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [tags, setTags] = useState("");
+  const [tags, setTags] = useState([]); // Bắt đầu với một mảng rỗng
   const [teacherId, setTeacherId] = useState(""); // Lưu profileId thay vì userId
   const [file, setFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null); // Để hiển thị ảnh xem trước
@@ -26,6 +31,7 @@ export default function CreateCourse() {
   const [snackBarOpen, setSnackBarOpen] = useState(false);
   const [snackSeverity, setSnackSeverity] = useState("info");
   const [snackBarMessage, setSnackBarMessage] = useState("");
+  const userRoles = useUserRoles();
 
   const handleCloseSnackBar = () => {
     setSnackBarOpen(false);
@@ -57,6 +63,19 @@ export default function CreateCourse() {
     }
   };
 
+  const handleTagChange = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault(); // Ngăn không cho nhập thêm
+      const newTag = e.target.value.trim();
+      if (newTag) {
+        setTags((prevTags) => [...prevTags, newTag]); // Thêm tag mới vào mảng
+        e.target.value = ""; // Xóa trường nhập
+      }
+    }
+  };
+  const handleDeleteTag = (tagToDelete) => {
+    setTags((prevTags) => prevTags.filter((tag) => tag !== tagToDelete)); // Xóa tag khỏi danh sách
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -64,7 +83,7 @@ export default function CreateCourse() {
     formData.append("name", name);
     formData.append("description", description);
     formData.append("price", price);
-    formData.append("tags", tags.split(","));
+    formData.append("tags", JSON.stringify(tags));
     formData.append("teacherId", teacherId); // profileId của giáo viên được chọn
     formData.append("file", file);
 
@@ -92,13 +111,21 @@ export default function CreateCourse() {
           gap: "20px",
           maxWidth: 600,
           margin: "0 auto",
+          backdropFilter: "blur(10px)", // Hiệu ứng mờ
+          backgroundColor: "rgba(255, 255, 255, 0.15)", // Màu nền với độ trong suốt
+          borderRadius: "15px", // Bo góc
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)", // Đổ bóng nhẹ
+          padding: "20px", // Khoảng cách padding
+          width: "100%", // Chiều rộng full
         }}
         onSubmit={handleSubmit}
       >
-        <Typography variant="h4">Create a New Course</Typography>
+        <Typography textAlign={"center"} variant="h4">
+          TẠO KHÓA HỌC
+        </Typography>
 
         <TextField
-          label="Course Name"
+          label="Tên Khóa Học"
           value={name}
           onChange={(e) => setName(e.target.value)}
           fullWidth
@@ -106,7 +133,7 @@ export default function CreateCourse() {
         />
 
         <TextField
-          label="Description"
+          label="Mô tả khóa học"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           fullWidth
@@ -116,7 +143,7 @@ export default function CreateCourse() {
         />
 
         <TextField
-          label="Price"
+          label="Giá của khóa học"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           fullWidth
@@ -124,31 +151,71 @@ export default function CreateCourse() {
           type="number"
         />
 
-        <TextField
-          label="Tags (comma separated)"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          fullWidth
-        />
-
-        <FormControl fullWidth required>
-          <InputLabel id="teacher-select-label">Select Teacher</InputLabel>
-          <Select
-            labelId="teacher-select-label"
-            value={teacherId}
-            onChange={(e) => setTeacherId(e.target.value)} // Cập nhật teacherId khi chọn giáo viên
-            label="Select Teacher"
+        <Box>
+          <TextField
+            label="Tags (nhấn Enter or comma để thêm)"
+            onKeyDown={handleTagChange}
+            fullWidth
+          />
+          <Box
+            sx={{
+              display: "flex",
+              gap: "10px",
+              marginTop: "10px",
+              flexWrap: "wrap",
+            }}
           >
-            {teachers.map((teacher) => (
-              <MenuItem key={teacher.profileId} value={teacher.profileId}>
-                {teacher.firstName} {teacher.lastName}
-              </MenuItem>
+            {tags.map((tag, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  padding: "2px",
+                }}
+              >
+                <Typography variant="body2" sx={{ marginLeft: "8px" }}>
+                  {tag}
+                </Typography>
+                <Button
+                  variant="text"
+                  color="error"
+                  sx={{ minWidth: "24px", padding: "0 4px" }}
+                  onClick={() => handleDeleteTag(tag)}
+                >
+                  X
+                </Button>
+              </Box>
             ))}
-          </Select>
-        </FormControl>
+          </Box>
+        </Box>
+        {/* Phần chọn giáo viên */}
+        {userRoles.includes("ROLE_ADMIN") ? (
+          <FormControl fullWidth required>
+            <InputLabel id="teacher-select-label">Chọn giáo viên</InputLabel>
+            <Select
+              labelId="teacher-select-label"
+              value={teacherId}
+              onChange={(e) => setTeacherId(e.target.value)} // Cập nhật teacherId khi chọn giáo viên
+              label="Select Teacher"
+            >
+              {teachers.map((teacher) => (
+                <MenuItem key={teacher.profileId} value={teacher.profileId}>
+                  {teacher.firstName} {teacher.lastName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <Typography>
+            Giảng viên: {profile.firstName} {profile.lastName}
+          </Typography>
+        )}
 
         <Button variant="contained" component="label" fullWidth>
-          Upload Image
+          Tải ảnh cho khóa học
           <input
             type="file"
             hidden
@@ -166,7 +233,7 @@ export default function CreateCourse() {
         )}
 
         <Button variant="contained" color="primary" type="submit" fullWidth>
-          Create Course
+          Tạo khóa học
         </Button>
       </Box>
 

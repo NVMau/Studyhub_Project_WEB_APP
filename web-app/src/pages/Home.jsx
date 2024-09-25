@@ -15,7 +15,7 @@ import Scene from "./Scene";
 import { useEffect, useState } from "react";
 import { getAllCourses, searchCourses } from "../services/courseService";
 import { registerCourse } from "../services/registerService";
-import { getMyProfile } from "../services/userService";
+import { useProfile } from "../context/ProfileContext";
 
 import LineItem from "../components/LineItem";
 
@@ -28,23 +28,7 @@ export default function Home() {
   const [snackSeverity, setSnackSeverity] = useState("info");
   const [snackBarOpen, setSnackBarOpen] = useState(false);
   const [snackBarMessage, setSnackBarMessage] = useState("");
-  const [profile, setProfile] = useState({});
-
-  const getProfile = async () => {
-    try {
-      const response = await getMyProfile();
-      const data = response.data;
-
-      console.log("Response data:", data); // In ra dữ liệu response
-
-      setProfile(data);
-    } catch (error) {
-      const errorResponse = error.response?.data;
-      setSnackSeverity("error");
-      setSnackBarMessage(errorResponse?.message ?? error.message);
-      setSnackBarOpen(true);
-    }
-  };
+  const { profile, fetchProfile } = useProfile();
 
   const handleCloseSnackBar = (event, reason) => {
     if (reason === "clickaway") {
@@ -73,22 +57,18 @@ export default function Home() {
       setSnackSeverity("success");
       setSnackBarMessage("Đăng kí khóa học thành công!");
       setSnackBarOpen(true);
+      await fetchProfile();
     } catch (error) {
       const errorResponse = error.response?.data;
       setSnackSeverity("error");
-      console.log("errorResponse data:", errorResponse.data);
+      console.log("errorResponse data:",error);
 
       // Kiểm tra xem lỗi có phải là do đã đăng ký khóa học trước đó
-      if (
-        errorResponse?.message ===
-        "Student has already enrolled in this course."
-      ) {
-        setSnackBarMessage("Bạn đã đăng kí khóa học này rồi!");
-      } else {
-        setSnackBarMessage(errorResponse?.message ?? error.message);
-      }
+     
+        setSnackBarMessage("Bạn đã đăng kí khóa học này rồi!")
 
       setSnackBarOpen(true);
+
     }
   };
   const handleSearch = async () => {
@@ -112,7 +92,7 @@ export default function Home() {
 
   useEffect(() => {
     getCourses();
-    getProfile();
+    fetchProfile();
   }, []);
 
   return (
@@ -184,12 +164,12 @@ export default function Home() {
               </Grid>
               <Grid item xs={3}>
                 <TextField
-                  label="Tên giáo viên"
-                  variant="outlined"
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  fullWidth
-                />
+                      label="Tên giáo viên"
+                      variant="outlined"
+                      value={teacherName}
+                      onChange={(e) => setTeacherName(e.target.value)}
+                      fullWidth
+                    />
               </Grid>
               <Grid item xs={1}>
                 <Button
@@ -235,7 +215,7 @@ export default function Home() {
                 }}
               >
                 <CardMedia
-                  sx={{ height: 200, objectFit: "cover" }}
+                  sx={{ height: 350, objectFit: "cover" }}
                   component="img"
                   alt={course.name}
                   image={course.imageUrl}

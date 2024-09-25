@@ -9,6 +9,7 @@ import { useTheme } from "@mui/material";
 import Header from "../components/Header";
 import SideMenu from "../components/SideMenu";
 import Footer from "../components/Footer"; //
+import { ProfileProvider } from "../context/ProfileContext";
 
 const drawerWidth = 300;
 
@@ -32,8 +33,10 @@ function Scene({ children }) {
       setMobileOpen(!mobileOpen);
     }
   };
+ 
 
   return (
+    <ProfileProvider> {/* Bọc ProfileProvider để quản lý trạng thái profile */}
     <Box
       sx={{
         display: "flex",
@@ -127,6 +130,7 @@ function Scene({ children }) {
         <Footer />
       </Box>
     </Box>
+     </ProfileProvider>
   );
 }
 

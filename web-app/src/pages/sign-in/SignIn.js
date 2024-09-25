@@ -12,6 +12,11 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import MuiCard from "@mui/material/Card";
+import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
+
+
+
 import { styled } from "@mui/material/styles";
 import ForgotPassword from "./ForgotPassword";
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from "./CustomIcons";
@@ -74,11 +79,17 @@ export default function SignIn(props) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [snackBarOpen, setSnackBarOpen] = useState(false);
+  const [snackSeverity, setSnackSeverity] = useState("info");
+  const [snackBarMessage, setSnackBarMessage] = useState("");
 
   const handleClickOpen = () => {
     setOpen(true);
   };
 
+  const handleCloseSnackBar = () => {
+    setSnackBarOpen(false);
+  };
   const handleClose = () => {
     setOpen(false);
   };
@@ -133,7 +144,7 @@ export default function SignIn(props) {
     params.append("client_id", "skillhub_app");
     params.append("username", username);
     params.append("password", password);
-    params.append("client_secret", "vwPi2qrYKPd7nOe9ErW8JqBWCikz5DfZ");
+    params.append("client_secret", "kUwFlob7oaWN4SGbv4EpRX35OSLKZ777");
     params.append("scope", "openid");
   
     try {
@@ -149,9 +160,13 @@ export default function SignIn(props) {
       console.log("Refresh Token:", refresh_token);
   
       navigate("/");
-    } catch (err) {
-      setError("Invalid username or password.");
-      console.error(err);
+    } catch (error) {
+      setSnackSeverity("error");
+      console.error(error);
+      setSnackBarMessage(
+        error.response?.data?.message || "Đăng nhập thất bại do sai tài khoản hoặc mật khẩu"
+      );
+      setSnackBarOpen(true);
     } finally {
       setLoading(false);
     }
@@ -300,6 +315,20 @@ export default function SignIn(props) {
           </Box>
         </Card>
       </SignInContainer>
+      <Snackbar
+        open={snackBarOpen}
+        onClose={handleCloseSnackBar}
+        autoHideDuration={6000}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackBar}
+          severity={snackSeverity}
+          variant="filled"
+        >
+          {snackBarMessage}
+        </Alert>
+      </Snackbar>
     </ThemeProvider>
   );
 }

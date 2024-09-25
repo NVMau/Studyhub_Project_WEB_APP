@@ -46,3 +46,20 @@ export const deleteUser = async (userId) => {
   return await httpClient.delete(`${API.DELETE_USER}/${userId}`);
 };
 
+export const getAllUsersCount = async () => {
+  return await httpClient.get(API.USER_COUNT_SYS);
+};
+
+export const updateAvatar = async (profileId, formData) => {
+  return await httpClient.put(`${API.UPDATE_AVATAR}/${profileId}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+
+export const updateUserProfile = async (profileData) => {
+  return await httpClient.put(`${API.UPDATE_USER}/${profileData.profileId}`, profileData);
+};
+
